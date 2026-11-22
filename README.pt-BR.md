@@ -2,7 +2,7 @@
 
 [English](README.md) | **Português**
 
-![Montagem real da PicoProbe conectada à Raspberry Pi Pico 2 W](images/Hardware_setup.jpeg)
+<img src="images/Hardware_setup.jpeg" alt="Montagem real da PicoProbe conectada à Raspberry Pi Pico 2 W" width="360">
 
 *Montagem de teste: a PicoProbe vermelha grava e depura a Pico 2 W, que executa o firmware FreeRTOS.*
 
@@ -40,7 +40,7 @@ Baixe `debugprobe_on_pico.uf2` na página de [releases oficiais do firmware Debu
 
 A imagem mostra a montagem e o caminho dos seis cabos coloridos. As cores abaixo seguem o diagrama: **VM** vermelho, **MR** marrom, **VD** verde, **LJ** laranja, **AZ** azul e **AM** amarelo.
 
-![Diagrama de ligação colorido entre PicoProbe e Pico 2 W](images/wiring.png)
+<img src="images/wiring.png" alt="Diagrama de ligação colorido entre PicoProbe e Pico 2 W" width="720">
 
 | Função | Cor do cabo | Pino no Pico debugger (PicoProbe) | Pino no Pico 2 W (target) | Observação |
 | --- | --- | --- | --- | --- |
@@ -146,7 +146,7 @@ No VS Code, abra uma extensão de monitor serial, selecione a porta CDC da PicoP
 
 O firmware apresenta o nome do projeto e a versão do FreeRTOS no início. Em seguida, inicializa o CYW43, informa que os contadores começarão em 2 segundos e mostra as contagens dos dois cores. O endereço MAC exibido em execução foi ocultado na imagem abaixo.
 
-![Saída do monitor serial mostrando o FreeRTOS SMP e os contadores dos cores](images/Output.png)
+<img src="images/Output.png" alt="Saída do monitor serial mostrando o FreeRTOS SMP e os contadores dos cores" width="720">
 
 O valor `core` vem do núcleo onde a tarefa está executando. A alternância de `core 0` e `core 1` demonstra as tarefas distribuídas nos dois núcleos do RP2350.
 
@@ -188,6 +188,10 @@ Use `continue`, `next` e `step` para continuar ou avançar pelo código. Antes d
 | `build.sh` | Configuração e compilação `Debug` |
 | `flasher.sh` | Gravação e verificação via OpenOCD |
 | `images/` | Fotos da montagem, diagrama de ligação e captura serial |
+
+## Licença
+
+O código-fonte original e a documentação do projeto estão licenciados sob a [licença MIT](LICENSE). Dependências e materiais de terceiros mantêm suas próprias licenças; consulte os avisos nos respectivos repositórios e diretórios.
 
 ## Referências
 

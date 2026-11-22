@@ -2,7 +2,7 @@
 
 **English** | [Português](README.pt-BR.md)
 
-![Physical setup with a PicoProbe connected to a Raspberry Pi Pico 2 W](images/Hardware_setup.jpeg)
+<img src="images/Hardware_setup.jpeg" alt="Physical setup with a PicoProbe connected to a Raspberry Pi Pico 2 W" width="360">
 
 *Experimental setup: the red PicoProbe programs and debugs the Pico 2 W running the FreeRTOS firmware.*
 
@@ -40,7 +40,7 @@ Download `debugprobe_on_pico.uf2` from the official [Debug Probe firmware releas
 
 The diagram shows the physical setup and the six colored wires. The color codes used in the table are **VM** red, **MR** brown, **VD** green, **LJ** orange, **AZ** blue, and **AM** yellow.
 
-![Colored wiring diagram between the PicoProbe and Pico 2 W](images/wiring.png)
+<img src="images/wiring.png" alt="Colored wiring diagram between the PicoProbe and Pico 2 W" width="720">
 
 | Function | Wire color | Pico debugger pin (PicoProbe) | Pico 2 W target pin | Notes |
 | --- | --- | --- | --- | --- |
@@ -146,7 +146,7 @@ In VS Code, open a serial monitor extension, select the PicoProbe CDC port — o
 
 The firmware prints the project name and FreeRTOS version at startup. It then initializes the CYW43, reports that the counters will start in two seconds, and prints the two core counters. The MAC address shown during runtime has been obscured in the screenshot below.
 
-![Serial monitor output showing FreeRTOS SMP and the core counters](images/Output.png)
+<img src="images/Output.png" alt="Serial monitor output showing FreeRTOS SMP and the core counters" width="720">
 
 The `core` value is read from the core on which each task is running. Seeing both `core 0` and `core 1` demonstrates tasks running on both RP2350 cores.
 
@@ -188,6 +188,10 @@ Use `continue`, `next`, and `step` to resume or step through the code. Before ex
 | `build.sh` | Debug configuration and build |
 | `flasher.sh` | Flashing and verification through OpenOCD |
 | `images/` | Setup photo, wiring diagram, and serial output capture |
+
+## License
+
+Original source code and project documentation are licensed under the [MIT License](LICENSE). Third-party dependencies and materials retain their own licenses; see the notices in their respective repositories and directories.
 
 ## References
 
