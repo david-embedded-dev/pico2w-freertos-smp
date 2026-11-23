@@ -125,7 +125,6 @@ test -f /usr/local/share/openocd/scripts/interface/cmsis-dap.cfg && echo "CMSIS-
 test -f /usr/local/share/openocd/scripts/target/rp2350.cfg && echo "RP2350: OK"
 ```
 
-Esses caminhos correspondem à instalação padrão em `/usr/local`. Se usar outra instalação, verifique os arquivos no diretório de scripts dela. Se houver mais de um OpenOCD instalado, confira `command -v openocd`; `flasher.sh` também aceita o caminho do executável pela variável `OPENOCD`.
 
 ## 5. Compilar
 
@@ -135,21 +134,12 @@ Na raiz do repositório:
 ./build.sh
 ```
 
-O script **remove o diretório `build/` existente** e cria uma compilação limpa em modo `Debug` para `PICO_BOARD=pico2_w`, usando Ninja. Não mantenha arquivos pessoais nesse diretório. Os arquivos gerados incluem:
+O script **remove o diretório `build/` existente** e cria uma compilação limpa em modo `Debug` para `PICO_BOARD=pico2_w`, usando Ninja. Os arquivos gerados incluem:
 
 ```text
 build/app/pico-freertos.elf
 build/app/pico-freertos.uf2
 build/app/pico-freertos.bin
-```
-
-Equivalente manual:
-
-```bash
-cmake -S . -B build -G Ninja \
-  -DPICO_BOARD=pico2_w \
-  -DCMAKE_BUILD_TYPE=Debug
-cmake --build build --parallel "$(nproc)"
 ```
 
 ## 6. Gravar pela PicoProbe
@@ -164,15 +154,6 @@ O script usa o OpenOCD com `cmsis-dap.cfg` e `rp2350.cfg`, verifica o ELF na fla
 
 Em caso de erro de acesso USB, configure as permissões do dispositivo, por exemplo com uma regra udev apropriada para sua distribuição.
 
-Equivalente manual:
-
-```bash
-openocd \
-  -f interface/cmsis-dap.cfg \
-  -f target/rp2350.cfg \
-  -c "adapter speed 1000" \
-  -c "program build/app/pico-freertos.elf verify reset exit"
-```
 
 ## 7. Abrir o monitor serial
 
