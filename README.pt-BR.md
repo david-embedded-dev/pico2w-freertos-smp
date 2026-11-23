@@ -1,67 +1,84 @@
-# FreeRTOS SMP na Raspberry Pi Pico 2 W com PicoProbe
+# FreeRTOS SMP na Raspberry Pi Pico 2 W
 
-[English](README.md) | **Português**
+**Português** | [English](README_en.md)
 
-<img src="images/Hardware_setup.jpeg" alt="Montagem real da PicoProbe conectada à Raspberry Pi Pico 2 W" width="360">
+Projeto em C com **FreeRTOS SMP** na Raspberry Pi Pico 2 W (RP2350), explorando multitarefa, afinidade de núcleo (*Core Affinity*) e sincronização entre tarefas.
 
-*Montagem de teste: a PicoProbe vermelha grava e depura a Pico 2 W, que executa o firmware FreeRTOS.*
+Uma Raspberry Pi Pico (RP2040) é utilizada como **PicoProbe** para gravação e depuração via SWD e comunicação UART.
 
-Este projeto demonstra uma configuração inicial do **FreeRTOS SMP** na **Raspberry Pi Pico 2 W (RP2350)**. Uma **Raspberry Pi Pico de primeira geração (RP2040)** executa o firmware Debug Probe e atua como PicoProbe: ela fornece depuração/gravação SWD e uma ponte serial UART via USB.
+<img src="images/Hardware_setup.jpeg" alt="PicoProbe e Pico 2 W conectadas para desenvolvimento" width="420">
 
-O firmware cria duas tarefas, uma fixada em cada núcleo da Pico 2 W, e mostra seus contadores pelo monitor serial. O projeto é experimental e voltado a aprendizado e testes de bring-up de firmware embarcado.
+## Implementação
 
-> **Placas usadas:** a Pico 1 funciona como probe; a Pico 2 W é o alvo que executa o FreeRTOS. O firmware deste repositório está configurado para RP2350/Pico 2 W.
+A aplicação utiliza três tarefas:
 
-## Visão geral
+| Tarefa | Núcleo | Função |
+|---|---|---|
+| Counter Task 0 | Core 0 | Contador de execução |
+| Counter Task 1 | Core 1 | Contador de execução |
+| LED Task | Core 0 | Controle do LED integrado |
 
-1. Gravar o firmware Debug Probe na Pico 1.
-2. Conectar SWD, UART e, opcionalmente, VSYS conforme a tabela de ligações.
-3. Compilar o firmware FreeRTOS para Pico 2 W.
-4. Gravar e depurar o ELF pela PicoProbe com OpenOCD.
-5. Acompanhar os dois núcleos pelo monitor serial do VS Code.
+O acesso à UART é protegido por Mutex. O LED é controlado pela interface CYW43.
 
-## Hardware necessário
+## Requisitos
 
-- Raspberry Pi Pico de primeira geração (RP2040), usada como PicoProbe;
-- Raspberry Pi Pico 2 W (RP2350), usada como alvo;
-- cabo USB de dados para a PicoProbe;
-- jumpers para SWD, UART e, se desejado, alimentação por VSYS.
+**Ambiente de desenvolvimento:**
+- Ubuntu/Debian
+- Git, CMake e Ninja
+- GNU Arm Embedded Toolchain
+- OpenOCD com suporte ao RP2350
+- GDB Multiarch
 
-## 1. Preparar a PicoProbe
+Os scripts utilizam Bash. O Pico SDK e o FreeRTOS Kernel são obtidos como submódulos.
 
-Baixe `debugprobe_on_pico.uf2` na página de [releases oficiais do firmware Debug Probe](https://github.com/raspberrypi/debugprobe/releases). Esse arquivo é para uma Pico de primeira geração. Não use `debugprobe.uf2`, que se destina ao Debug Probe oficial.
+**Hardware:**
+- Raspberry Pi Pico (RP2040), como PicoProbe;
+- Raspberry Pi Pico 2 W (RP2350), como placa-alvo;
+- Cabo USB de dados e fios para SWD, UART e GND.
 
-1. Desconecte a Pico 1 do USB.
-2. Mantenha **BOOTSEL** pressionado enquanto conecta a placa ao computador.
-3. Quando o volume `RPI-RP2` aparecer, copie `debugprobe_on_pico.uf2` para ele.
-4. A Pico reinicia e passa a oferecer CMSIS-DAP para SWD e uma ponte USB-UART.
+A placa-alvo pode ser alimentada por USB ou pela saída VSYS da PicoProbe. Não utilize as duas fontes simultaneamente.
 
-## 2. Ligações entre debugger e target
+**Opcional:** [case impresso em 3D para a PicoProbe](https://www.thingiverse.com/thing:5566804).
 
-A imagem mostra a montagem e o caminho dos seis cabos coloridos. As cores abaixo seguem o diagrama: **VM** vermelho, **MR** marrom, **VD** verde, **LJ** laranja, **AZ** azul e **AM** amarelo.
+## 1. Gravar o firmware da PicoProbe
 
-<img src="images/wiring.png" alt="Diagrama de ligação colorido entre PicoProbe e Pico 2 W" width="720">
+Na página oficial de [releases do Debug Probe](https://github.com/raspberrypi/debugprobe/releases/latest), escolha o arquivo conforme a placa usada **como probe**:
 
-| Função | Cor do cabo | Pino no Pico debugger (PicoProbe) | Pino no Pico 2 W (target) | Observação |
-| --- | --- | --- | --- | --- |
-| SWCLK (clock SWD) | Azul | GP2 (pino físico 4) | SWCLK (header DEBUG) | Clock da depuração SWD |
-| SWDIO (dados SWD) | Verde | GP3 (pino físico 5) | SWDIO (header DEBUG) | Dados bidirecionais da depuração |
-| GND (terra) |Marrom | GND (pino físico 38) | GND ( header DEBUG) | Referência elétrica comum |
-| UART TX → RX | Laranja | GP4 (pino físico 6) | GP1 (pino físico 2, UART0 RX) | Envia dados ao target |
-| UART RX ← TX | Amarelo | GP5 (pino físico 7) | GP0 (pino físico 1, UART0 TX) | Recebe o dados do target |
-| Alimentação VSYS | Vermelho | VSYS (pino físico 39) | VSYS (pino físico 39) | Alimenta o target pela PicoProbe |
+| Placa usada como probe | Firmware |
+| --- | --- |
+| Raspberry Pi Pico de primeira geração (RP2040) | `debugprobe_on_pico.uf2` |
+| Raspberry Pi Pico 2 (RP2350) | `debugprobe_on_pico2.uf2` |
+| Raspberry Pi Debug Probe oficial | `debugprobe.uf2` |
 
-SWD precisa de **SWCLK, SWDIO e GND**. Para apenas receber os logs, conecte também o UART TX da Pico 2 W (GP0) ao UART RX da PicoProbe (GP5). GP4/GP1 só é necessário se o computador também for enviar dados à Pico 2 W.
+Neste guia, a probe é uma **Pico 1**: baixe `debugprobe_on_pico.uf2`. A Pico 2 W é o alvo e receberá o firmware deste projeto na etapa de gravação; não grave nela o firmware da probe.
 
-Conecte o GND comum antes dos sinais. Os sinais de GPIO são de 3,3 V. A ligação vermelha de VSYS é opcional; se alimentar a Pico 2 W por VSYS, não conecte simultaneamente outra fonte USB de alimentação ao target.
+1. Desconecte a Pico 1.
+2. Mantenha **BOOTSEL** pressionado e conecte a Pico 1 ao computador.
+3. Copie `debugprobe_on_pico.uf2` para a unidade `RPI-RP2`.
+4. Após reiniciar, a Pico 1 oferece CMSIS-DAP para SWD e uma interface serial USB-UART.
 
-### Gabinete impresso em 3D
+## 2. Conectar as placas
 
-O gabinete usado para a PicoProbe pode ser impresso em 3D. Os arquivos do modelo estão no [Thingiverse — PicoProbe case](https://www.thingiverse.com/thing:5566804).
+O diagrama ilustra as ligações, incluindo a alimentação opcional do alvo por VSYS. A ilustração da placa à direita é de uma Pico W; para a **Pico 2 W**, identifique os sinais pelos nomes na tabela e no header DEBUG, não apenas pela aparência da placa.
 
-## 3. Dependências de compilação
+<img src="images/wiring.png" alt="Diagrama de ligações entre PicoProbe e Pico 2 W" width="720">
 
-Os comandos abaixo são para Ubuntu/Debian:
+| Finalidade | Pino da probe | Pino do alvo | Ligação |
+| --- | --- | --- | --- |
+| Clock SWD | GP2, pino físico 4 | SWCLK no header DEBUG | Probe GP2 → alvo SWCLK |
+| Dados SWD | GP3, pino físico 5 | SWDIO no header DEBUG | Probe GP3 → alvo SWDIO |
+| Terra comum | GND, pino físico 38 | GND no header DEBUG | Probe GND → alvo GND |
+| UART TX da probe → RX do alvo | GP4, pino físico 6 | GP1/UART0 RX, pino físico 2 | Entrada opcional no alvo |
+| UART TX do alvo → RX da probe | GP5, pino físico 7 | GP0/UART0 TX, pino físico 1 | Necessária para os logs |
+| Alimentação VSYS | VSYS, pino físico 39 | VSYS, pino físico 39 | Alimentação opcional do alvo |
+
+SWD requer SWCLK, SWDIO e GND. A direção UART TX do alvo/GP0 → RX da probe/GP5 é necessária para visualizar os contadores. UART GP4/GP1 só é necessária para enviar dados ao alvo; o exemplo não processa comandos seriais.
+
+Conecte GND primeiro e use sinais em nível lógico de 3,3 V. VSYS é opcional. Quando estiver conectado, não ligue outra fonte USB ao alvo ao mesmo tempo.
+
+## 3. Instalar as ferramentas de compilação
+
+Os scripts usam Bash, CMake, Ninja e ferramentas GNU Arm Embedded. Os comandos abaixo são para Ubuntu/Debian:
 
 ```bash
 sudo apt update
@@ -70,46 +87,63 @@ sudo apt install -y build-essential cmake ninja-build git \
   libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev gdb-multiarch
 ```
 
-O Pico SDK e o FreeRTOS Kernel estão configurados como submódulos em `libs/`. Na raiz do repositório, inicialize-os se necessário:
+Clone o repositório e inicialize os submódulos Pico SDK e FreeRTOS Kernel:
 
 ```bash
+git clone https://github.com/david-embedded-dev/pico2w-freertos-dualcore-counter.git
+cd pico2w-freertos-dualcore-counter
 git submodule update --init --recursive
 ```
 
-### OpenOCD com suporte a RP2350
+## 4. Instalar OpenOCD com suporte a RP2350
 
-O OpenOCD precisa incluir `interface/cmsis-dap.cfg` e `target/rp2350.cfg`. Algumas distribuições fornecem uma versão antiga; a versão mantida pela Raspberry Pi está no [repositório raspberrypi/openocd](https://github.com/raspberrypi/openocd).
+O OpenOCD instalado precisa fornecer estes dois arquivos:
 
-Para compilar e instalar no Ubuntu/Debian:
+- `interface/cmsis-dap.cfg`
+- `target/rp2350.cfg`
+
+Pacotes antigos das distribuições podem não suportar o RP2350. O [fork OpenOCD da Raspberry Pi](https://github.com/raspberrypi/openocd) inclui suporte às placas Pico.
 
 ```bash
 sudo apt install -y autoconf libtool pkg-config libusb-1.0-0-dev libhidapi-dev
-git clone --recurse-submodules https://github.com/raspberrypi/openocd.git
-cd openocd
-./bootstrap
-./configure --enable-cmsis-dap
-make -j"$(nproc)"
-sudo make install
+
+git clone --recurse-submodules https://github.com/raspberrypi/openocd.git "$HOME/raspberrypi-openocd"
+(
+  cd "$HOME/raspberrypi-openocd"
+  ./bootstrap
+  ./configure --enable-cmsis-dap
+  make -j"$(nproc)"
+  sudo make install
+)
 ```
 
-Confira a instalação e se o script do alvo RP2350 está disponível:
+Confira a instalação:
 
 ```bash
 openocd --version
-find /usr/share/openocd /usr/local/share/openocd -path '*/target/rp2350.cfg' 2>/dev/null
+test -f /usr/local/share/openocd/scripts/interface/cmsis-dap.cfg && echo "CMSIS-DAP: OK"
+test -f /usr/local/share/openocd/scripts/target/rp2350.cfg && echo "RP2350: OK"
 ```
 
-## 4. Compilar o firmware FreeRTOS
+Esses caminhos correspondem à instalação padrão em `/usr/local`. Se usar outra instalação, verifique os arquivos no diretório de scripts dela. Se houver mais de um OpenOCD instalado, confira `command -v openocd`; `flasher.sh` também aceita o caminho do executável pela variável `OPENOCD`.
 
-Na raiz deste repositório:
+## 5. Compilar
+
+Na raiz do repositório:
 
 ```bash
 ./build.sh
 ```
 
-O script configura `PICO_BOARD=pico2_w`, seleciona o build `Debug` e compila usando Ninja. Ele remove o diretório `build/` antes de compilar. O ELF usado para gravação e depuração fica em `build/app/pico-freertos.elf`.
+O script **remove o diretório `build/` existente** e cria uma compilação limpa em modo `Debug` para `PICO_BOARD=pico2_w`, usando Ninja. Não mantenha arquivos pessoais nesse diretório. Os arquivos gerados incluem:
 
-Também é possível configurar e compilar manualmente:
+```text
+build/app/pico-freertos.elf
+build/app/pico-freertos.uf2
+build/app/pico-freertos.bin
+```
+
+Equivalente manual:
 
 ```bash
 cmake -S . -B build -G Ninja \
@@ -118,19 +152,19 @@ cmake -S . -B build -G Ninja \
 cmake --build build --parallel "$(nproc)"
 ```
 
-O programa mantém o LED da Pico 2 W piscando e executa duas tarefas FreeRTOS com afinidade fixa: contador no core 0 e contador no core 1. A saída UART é configurada para **115200 baud, 8N1**.
+## 6. Gravar pela PicoProbe
 
-## 5. Gravar pela PicoProbe
-
-Com a PicoProbe conectada por USB ao computador e os fios SWD conectados ao target, execute:
+Conecte o cabo USB da PicoProbe e complete as ligações SWD e GND. Em seguida:
 
 ```bash
 ./flasher.sh
 ```
 
-O script usa OpenOCD para gravar `build/app/pico-freertos.elf`, verificar o conteúdo da flash e reiniciar a Pico 2 W. Se houver erro de permissão USB, tente `sudo ./flasher.sh`.
+O script usa o OpenOCD com `cmsis-dap.cfg` e `rp2350.cfg`, verifica o ELF na flash, reinicia o alvo e encerra.
 
-O comando equivalente é:
+Em caso de erro de acesso USB, configure as permissões do dispositivo, por exemplo com uma regra udev apropriada para sua distribuição.
+
+Equivalente manual:
 
 ```bash
 openocd \
@@ -140,64 +174,66 @@ openocd \
   -c "program build/app/pico-freertos.elf verify reset exit"
 ```
 
-## 6. Monitor serial e resultado
+## 7. Abrir o monitor serial
 
-No VS Code, abra uma extensão de monitor serial, selecione a porta CDC da PicoProbe — no Linux costuma ser `/dev/ttyACM0` — e configure **115200 baud**. Conecte o monitor antes de energizar a placa para capturar desde o banner inicial.
+1. Mantenha a PicoProbe conectada ao computador por USB.
+2. No VS Code, abra uma extensão de monitor serial ou use outro programa de sua preferência.
+3. Selecione a porta CDC/UART da PicoProbe; no Linux, pode ser `/dev/ttyACM0`.
+4. Configure **115200 baud, 8 bits de dados, sem paridade e 1 stop bit (8N1)** e inicie o monitoramento.
 
-O firmware apresenta o nome do projeto e a versão do FreeRTOS no início. Em seguida, inicializa o CYW43, informa que os contadores começarão em 2 segundos e mostra as contagens dos dois cores. O endereço MAC exibido em execução foi ocultado na imagem abaixo.
+A PicoProbe oferece CMSIS-DAP para gravação e uma porta CDC para a serial: selecione a porta serial. A saída USB serial da própria Pico 2 W está desabilitada neste firmware; conecte o monitor à porta da **PicoProbe**. Se perdeu as mensagens iniciais, mantenha o monitor aberto e execute `./flasher.sh` novamente em outro terminal para gravar e reiniciar o alvo.
 
-<img src="images/Output.png" alt="Saída do monitor serial mostrando o FreeRTOS SMP e os contadores dos cores" width="720">
+Saída esperada:
 
-O valor `core` vem do núcleo onde a tarefa está executando. A alternância de `core 0` e `core 1` demonstra as tarefas distribuídas nos dois núcleos do RP2350.
-
-## 7. Depuração interativa com GDB
-
-Depois de gravar o firmware, inicie o servidor OpenOCD em um terminal:
-
-```bash
-openocd -f interface/cmsis-dap.cfg \
-  -f target/rp2350.cfg \
-  -c "adapter speed 1000"
+```text
+=== FreeRTOS SMP - Raspberry Pi Pico 2 W ===
+FreeRTOS Kernel: <versão>
+FreeRTOS SMP configurado.
+core 1: 0 s
+core 0: 0 s
+core 1: 1 s
+core 0: 1 s
+...
 ```
 
-Em outro terminal, na raiz do repositório, abra o ELF no GDB:
+<img src="images/Output.png" alt="Saída serial mostrando contadores nos dois núcleos" width="720">
 
-```bash
-gdb-multiarch build/app/pico-freertos.elf
-```
+A versão do FreeRTOS e os logs de inicialização podem variar. A ordem das mensagens não é garantida: o importante é que os contadores de `core 0` e `core 1` continuem aumentando. Cada contador começa em zero quando sua tarefa inicia, após a pausa de dois segundos na inicialização.
 
-No prompt do GDB:
+## Continue desenvolvendo
 
-```gdb
-target extended-remote localhost:3333
-monitor reset init
-break counter_task
-continue
-```
+- Explore a criação de tarefas em `app/src/main.c`.
+- Consulte `config/FreeRTOSConfig.h` para ajustar as configurações SMP e a afinidade dos núcleos.
+- Após as alterações, compile com `./build.sh` e grave com `./flasher.sh`.
 
-Use `continue`, `next` e `step` para continuar ou avançar pelo código. Antes de encerrar o GDB, execute `monitor reset run` para deixar o target em execução.
+## Solução de problemas
 
-## Estrutura principal do projeto
+- **Submódulos:** execute `git submodule update --init --recursive`.
+- **OpenOCD:** confirme que a instalação possui suporte ao RP2350 e localiza `rp2350.cfg`.
+- **Gravação SWD:** verifique alimentação, GND comum, SWCLK, SWDIO e permissões USB da PicoProbe.
+- **Serial sem saída:** confira a porta CDC da PicoProbe, as conexões UART, o GND e a configuração 115200/8N1.
+- **Mensagens iniciais ausentes:** abra o monitor serial antes de reiniciar a placa.
 
-| Caminho | Descrição |
-| --- | --- |
-| `app/src/main.c` | Inicialização, LED e tarefas contadoras nos dois cores |
-| `app/CMakeLists.txt` | Bibliotecas do aplicativo e configuração da UART |
-| `config/FreeRTOSConfig.h` | Configuração SMP e do kernel FreeRTOS |
-| `CMakeLists.txt` | Pico SDK e port FreeRTOS para RP2350 |
-| `build.sh` | Configuração e compilação `Debug` |
-| `flasher.sh` | Gravação e verificação via OpenOCD |
-| `images/` | Fotos da montagem, diagrama de ligação e captura serial |
+## Estrutura do projeto
 
-## Licença
-
-O código-fonte original e a documentação do projeto estão licenciados sob a [licença MIT](LICENSE). Dependências e materiais de terceiros mantêm suas próprias licenças; consulte os avisos nos respectivos repositórios e diretórios.
+| Caminho | Finalidade |
+|---|---|
+| `app/src/main.c` | Inicialização CYW43 e implementação das tarefas |
+| `app/CMakeLists.txt` | Configuração do executável e das bibliotecas |
+| `config/FreeRTOSConfig.h` | Configurações do FreeRTOS SMP |
+| `CMakeLists.txt` | Configuração do Pico SDK e do projeto |
+| `build.sh` | Compilação do firmware |
+| `flasher.sh` | Gravação e verificação do firmware |
 
 ## Referências
 
-- [Firmware Debug Probe — releases](https://github.com/raspberrypi/debugprobe/releases)
 - [Documentação Raspberry Pi Debug Probe](https://www.raspberrypi.com/documentation/microcontrollers/debug-probe.html)
-- [OpenOCD da Raspberry Pi](https://github.com/raspberrypi/openocd)
-- [Pico SDK](https://github.com/raspberrypi/pico-sdk)
+- [Releases do firmware Debug Probe](https://github.com/raspberrypi/debugprobe/releases)
+- [Raspberry Pi Pico SDK](https://github.com/raspberrypi/pico-sdk)
 - [FreeRTOS Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
-- [Gabinete PicoProbe para impressão 3D no Thingiverse](https://www.thingiverse.com/thing:5566804)
+- [OpenOCD da Raspberry Pi](https://github.com/raspberrypi/openocd)
+- [Case para PicoProbe](https://www.thingiverse.com/thing:5566804)
+
+## Licença
+
+Os arquivos originais deste projeto estão licenciados sob a [Licença MIT](LICENSE). Pico SDK, FreeRTOS e o case de terceiros mantêm suas respectivas licenças.
