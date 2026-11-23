@@ -59,7 +59,7 @@ Neste guia, a probe é uma **Pico 1**: baixe `debugprobe_on_pico.uf2`. A Pico 2 
 
 ## 2. Conectar as placas
 
-O diagrama ilustra as ligações, incluindo a alimentação opcional do alvo por VSYS. A ilustração da placa à direita é de uma Pico W; para a **Pico 2 W**, identifique os sinais pelos nomes na tabela e no header DEBUG, não apenas pela aparência da placa.
+A placa Pico W à esquerda representa a Pico 2 W, pois ambas possuem a mesma pinagem.
 
 <img src="images/wiring.png" alt="Diagrama de ligações entre PicoProbe e Pico 2 W" width="720">
 
