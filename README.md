@@ -59,7 +59,7 @@ This guide uses a **Pico 1** as the probe: download `debugprobe_on_pico.uf2`. Th
 
 ## 2. Wire the boards
 
-The diagram illustrates the wiring, including optional target power through VSYS. The board illustrated on the right is a Pico W; for the **Pico 2 W**, identify signals by the names in the table and on the DEBUG header rather than by the board's appearance alone.
+The Pico W on the left represents the Pico 2 W due to their identical pinout.
 
 <img src="images/wiring.png" alt="Wiring diagram for PicoProbe and Pico 2 W" width="720">
 
