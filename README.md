@@ -90,8 +90,8 @@ sudo apt install -y build-essential cmake ninja-build git \
 Clone the repository and initialize the Pico SDK and FreeRTOS Kernel submodules:
 
 ```bash
-git clone https://github.com/david-embedded-dev/pico2w-freertos-dualcore-counter.git
-cd pico2w-freertos-dualcore-counter
+git clone https://github.com/david-embedded-dev/pico2w-freertos-smp.git
+cd pico2w-freertos-smp
 git submodule update --init --recursive
 ```
 
