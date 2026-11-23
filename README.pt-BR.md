@@ -185,17 +185,6 @@ A PicoProbe oferece CMSIS-DAP para gravação e uma porta CDC para a serial: sel
 
 Saída esperada:
 
-```text
-=== FreeRTOS SMP - Raspberry Pi Pico 2 W ===
-FreeRTOS Kernel: <versão>
-FreeRTOS SMP configurado.
-core 1: 0 s
-core 0: 0 s
-core 1: 1 s
-core 0: 1 s
-...
-```
-
 <img src="images/Output.png" alt="Saída serial mostrando contadores nos dois núcleos" width="720">
 
 A versão do FreeRTOS e os logs de inicialização podem variar. A ordem das mensagens não é garantida: o importante é que os contadores de `core 0` e `core 1` continuem aumentando. Cada contador começa em zero quando sua tarefa inicia, após a pausa de dois segundos na inicialização.
