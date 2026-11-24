@@ -50,7 +50,7 @@ static void counter_task(void *params)
 
 static void fatal_error(const char *message)
 {
-    printf("ERRO: %s\n", message);
+    printf("ERROR: %s\n", message);
     for (;;)
     {
         tight_loop_contents();
@@ -67,46 +67,46 @@ int main(void)
 
     if (cyw43_arch_init() != 0)
     {
-        fatal_error("falha ao inicializar CYW43");
+        fatal_error("Failed to initialize CYW43");
     }
 
     /* Force CYW43 firmware startup now so its version logs precede task logs. */
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
     stdio_flush();
 
-    printf("FreeRTOS SMP configurado.\n");
+    printf("FreeRTOS SMP configured.\n");
     stdio_flush();
     sleep_ms(COUNTER_START_DELAY_MS);
 
     uart_mutex = xSemaphoreCreateMutex();
     if (uart_mutex == NULL)
     {
-        fatal_error("nao foi possivel criar o mutex da UART");
+        fatal_error("Failed to create the UART mutex");
     }
 
     if (xTaskCreateAffinitySet(blink_task, "blink", 256, NULL, 1,
                                (UBaseType_t) (1U << 0), NULL) != pdPASS)
     {
-        fatal_error("nao foi possivel criar a tarefa blink");
+        fatal_error("Failed to create the blink task");
     }
 
     if (xTaskCreateAffinitySet(counter_task, "counter0", 1024,
                                NULL, 1,
                                (UBaseType_t) (1U << 0), NULL) != pdPASS)
     {
-        fatal_error("nao foi possivel criar a tarefa do core 0");
+        fatal_error("Failed to create the core 0 task");
     }
 
     if (xTaskCreateAffinitySet(counter_task, "counter1", 1024,
                                NULL, 1,
                                (UBaseType_t) (1U << 1), NULL) != pdPASS)
     {
-        fatal_error("nao foi possivel criar a tarefa do core 1");
+        fatal_error("Failed to create the core 1 task");
     }
 
     vTaskStartScheduler();
 
-    fatal_error("o scheduler FreeRTOS retornou");
+    fatal_error("The FreeRTOS scheduler returned");
     return 1;
 }
 

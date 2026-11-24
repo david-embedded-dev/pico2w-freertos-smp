@@ -6,14 +6,14 @@ ELF_FILE="$PROJECT_DIR/build/app/pico-freertos.elf"
 OPENOCD_BIN="${OPENOCD:-openocd}"
 
 if ! command -v "$OPENOCD_BIN" >/dev/null 2>&1; then
-    printf 'Erro: OpenOCD não encontrado (%s). Instale-o ou defina OPENOCD com o caminho do executável.\n' \
+    printf 'Error: OpenOCD not found (%s). Install it or set OPENOCD to the executable path.\n' \
         "$OPENOCD_BIN" >&2
     exit 1
 fi
 
 if [[ ! -f "$ELF_FILE" ]]; then
-    printf 'Erro: firmware ELF não encontrado: %s\n' "$ELF_FILE" >&2
-    printf 'Compile primeiro com: %s/build.sh\n' "$PROJECT_DIR" >&2
+    printf 'Error: ELF firmware not found: %s\n' "$ELF_FILE" >&2
+    printf 'Build it first with: %s/build.sh\n' "$PROJECT_DIR" >&2
     exit 1
 fi
 
