@@ -3,6 +3,7 @@
 **English** | [Português](README.pt-BR.md)
 
 A C project using **FreeRTOS SMP** on the Raspberry Pi Pico 2 W (RP2350), exploring multitasking, core affinity and synchronization between tasks.
+
 <img src="images/Hardware_setup.jpeg" alt="PicoProbe connected to the Pico 2 W" width="420">
 
 ## Implementation
@@ -21,7 +22,7 @@ UART access is protected by a mutex. The LED is controlled through the CYW43 int
 
 ## Requirements
 
-**Development environment:**
+**Software:**
 - Ubuntu/Debian
 - Visual Studio Code
 - Git, CMake and Ninja
@@ -163,7 +164,7 @@ Expected output:
 
 ## 8. Debug
 
-To debug, you need a PicoProbe (or another CMSIS-DAP debug probe), OpenOCD with RP2350 support, `gdb-multiarch e a extensão de depuração do VS Code:** [Cortex-Debug (`marus25.cortex-debug`)](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug).`.
+To debug, you need a PicoProbe (or another CMSIS-DAP debug probe), OpenOCD with RP2350 support, gdb-multiarch e a extensão de depuração do VS Code Cortex-Debug.
 
 In Run and Debug, select Pico 2 W via Pico Probe and click Start Debugging. Set breakpoints and test the application. The expected output is shown below:
 

@@ -20,7 +20,7 @@ O acesso à UART é protegido por Mutex. O LED é controlado pela interface CYW4
 
 ## Requisitos
 
-**Ambiente de desenvolvimento:**
+**Software**
 - Ubuntu/Debian
 - Visual Studio Code
 - Git, CMake e Ninja
@@ -160,7 +160,7 @@ Saída esperada:
 
 ## 8. Debug
 
- Para debugar são necessários uma PicoProbe (ou outra sonda CMSIS-DAP), OpenOCD com suporte a RP2350 e `gdb-multiarch e a extensão de depuração do VS Code:** [Cortex-Debug (`marus25.cortex-debug`)](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug).`.
+ Para debugar são necessários uma PicoProbe (ou outra sonda CMSIS-DAP), OpenOCD com suporte a RP2350 e gdb-multiarch e a extensão de depuração do VS Code Cortex-Debug.
 
 Em **Run and Debug**, selecione **Pico 2 W via Pico Probe** e clique em iniciar, insira breakpoints e teste, a saída esperada é mostrada abaixo:
 <p align="center">
