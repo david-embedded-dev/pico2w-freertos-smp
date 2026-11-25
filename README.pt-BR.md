@@ -4,9 +4,6 @@
 
 Projeto em C com **FreeRTOS SMP** na Raspberry Pi Pico 2 W (RP2350), explorando multitarefa, afinidade de núcleo (*Core Affinity*) e sincronização entre tarefas.
 
-Uma Raspberry Pi Pico (RP2040) é utilizada como **PicoProbe** para gravação e depuração via SWD e comunicação UART.
-
-<img src="images/Hardware_setup.jpeg" alt="PicoProbe e Pico 2 W conectadas para desenvolvimento" width="420">
 
 ## Implementação
 
@@ -20,14 +17,40 @@ A aplicação utiliza três tarefas:
 
 O acesso à UART é protegido por Mutex. O LED é controlado pela interface CYW43.
 
+### Arquitetura do projeto
+
+```text
+.
+├── app/
+│   ├── src/
+│   │   └── main.c             # tarefas FreeRTOS, LED e logs UART
+│   └── CMakeLists.txt         # executável e bibliotecas da aplicação
+├── config/
+│   └── FreeRTOSConfig.h       # configuração SMP e afinidade dos núcleos
+├── libs/
+│   ├── FreeRTOS-Kernel/       # kernel e port para RP2350
+│   └── pico-sdk/              # SDK e drivers da Raspberry Pi Pico
+├── .vscode/
+│   ├── launch.json            # sessão de depuração Cortex-Debug/OpenOCD
+│   └── tasks.json             # tarefa de compilação
+├── images/                    # diagramas e capturas do projeto
+├── CMakeLists.txt             # configuração principal do projeto
+├── build.sh                   # compila e gera ELF/UF2 em build/
+└── flasher.sh                 # grava e verifica o firmware via PicoProbe
+```
+
+O `build.sh` compila a aplicação com o Pico SDK e o FreeRTOS; o firmware resultante executa na Pico 2 W. A depuração usa SWD, e os logs são enviados separadamente pela UART.
+
 ## Requisitos
 
 **Ambiente de desenvolvimento:**
 - Ubuntu/Debian
+- Visual Studio Code
 - Git, CMake e Ninja
 - GNU Arm Embedded Toolchain
 - OpenOCD com suporte ao RP2350
-- GDB Multiarch
+- `gdb-multiarch` (ou `arm-none-eabi-gdb`)
+- Extensão Cortex-Debug no VS Code
 
 Os scripts utilizam Bash. O Pico SDK e o FreeRTOS Kernel são obtidos como submódulos.
 
@@ -72,11 +95,9 @@ A placa Pico W à esquerda representa a Pico 2 W, pois ambas possuem a mesma pin
 | UART TX do alvo → RX da probe | GP5, pino físico 7 | GP0/UART0 TX, pino físico 1 | Necessária para os logs |
 | Alimentação VSYS | VSYS, pino físico 39 | VSYS, pino físico 39 | Alimentação opcional do alvo |
 
-SWD requer SWCLK, SWDIO e GND. A direção UART TX do alvo/GP0 → RX da probe/GP5 é necessária para visualizar os contadores. UART GP4/GP1 só é necessária para enviar dados ao alvo; o exemplo não processa comandos seriais.
+<img src="images/Hardware_setup.jpeg" alt="PicoProbe e Pico 2 W conectadas para desenvolvimento" width="420">
 
-Conecte GND primeiro e use sinais em nível lógico de 3,3 V. VSYS é opcional. Quando estiver conectado, não ligue outra fonte USB ao alvo ao mesmo tempo.
-
-## 3. Instalar as ferramentas de compilação
+## 3. Setup do ambiente
 
 Os scripts usam Bash, CMake, Ninja e ferramentas GNU Arm Embedded. Os comandos abaixo são para Ubuntu/Debian:
 
@@ -152,23 +173,27 @@ Conecte o cabo USB da PicoProbe e complete as ligações SWD e GND. Em seguida:
 
 O script usa o OpenOCD com `cmsis-dap.cfg` e `rp2350.cfg`, verifica o ELF na flash, reinicia o alvo e encerra.
 
-Em caso de erro de acesso USB, configure as permissões do dispositivo, por exemplo com uma regra udev apropriada para sua distribuição.
+## 7. Monitor serial
 
+Para receber os logs, instale e abra [Serial Monitor](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-serial-monitor) ou use outro terminal serial. Selecione a porta CDC/UART da probe (geralmente `/dev/ttyACM0` no Linux) e configure **115200 baud, 8N1**.
 
-## 7. Abrir o monitor serial
-
-1. Mantenha a PicoProbe conectada ao computador por USB.
-2. No VS Code, abra uma extensão de monitor serial ou use outro programa de sua preferência.
-3. Selecione a porta CDC/UART da PicoProbe; no Linux, pode ser `/dev/ttyACM0`.
-4. Configure **115200 baud, 8 bits de dados, sem paridade e 1 stop bit (8N1)** e inicie o monitoramento.
-
-A PicoProbe oferece CMSIS-DAP para gravação e uma porta CDC para a serial: selecione a porta serial. A saída USB serial da própria Pico 2 W está desabilitada neste firmware; conecte o monitor à porta da **PicoProbe**. Se perdeu as mensagens iniciais, mantenha o monitor aberto e execute `./flasher.sh` novamente em outro terminal para gravar e reiniciar o alvo.
+A USB serial da própria Pico 2 W está desabilitada neste firmware; selecione a porta da **PicoProbe**, não a do alvo. Se perdeu as mensagens iniciais, abra o monitor primeiro e reinicie a placa com `./flasher.sh` em outro terminal.
 
 Saída esperada:
 
 <img src="images/Output.png" alt="Saída serial mostrando contadores nos dois núcleos" width="720">
 
-A versão do FreeRTOS e os logs de inicialização podem variar. A ordem das mensagens não é garantida: o importante é que os contadores de `core 0` e `core 1` continuem aumentando. Cada contador começa em zero quando sua tarefa inicia, após a pausa de dois segundos na inicialização.
+## 8. Debug
+
+ Para debugar são necessários uma PicoProbe (ou outra sonda CMSIS-DAP), OpenOCD com suporte a RP2350 e `gdb-multiarch e a extensão de depuração do VS Code:** [Cortex-Debug (`marus25.cortex-debug`)](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug).`.
+
+Em **Run and Debug**, selecione **Pico 2 W via Pico Probe** e clique em iniciar, insira breakpoints e teste, a saída esperada é mostrada abaixo:
+<p align="center">
+  <img src="images/debug-vscode.png" alt="VS Code pausado em um breakpoint, com os controles do depurador e os logs UART do FreeRTOS no Serial Monitor" width="900">
+</p>
+
+*Depuração da Pico 2 W via PicoProbe no VS Code.*
+
 
 ## Continue desenvolvendo
 
@@ -184,16 +209,6 @@ A versão do FreeRTOS e os logs de inicialização podem variar. A ordem das men
 - **Serial sem saída:** confira a porta CDC da PicoProbe, as conexões UART, o GND e a configuração 115200/8N1.
 - **Mensagens iniciais ausentes:** abra o monitor serial antes de reiniciar a placa.
 
-## Estrutura do projeto
-
-| Caminho | Finalidade |
-|---|---|
-| `app/src/main.c` | Inicialização CYW43 e implementação das tarefas |
-| `app/CMakeLists.txt` | Configuração do executável e das bibliotecas |
-| `config/FreeRTOSConfig.h` | Configurações do FreeRTOS SMP |
-| `CMakeLists.txt` | Configuração do Pico SDK e do projeto |
-| `build.sh` | Compilação do firmware |
-| `flasher.sh` | Gravação e verificação do firmware |
 
 ## Referências
 

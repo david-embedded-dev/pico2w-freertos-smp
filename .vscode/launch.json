@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Pico 2 W via Pico Probe",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "openocd",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/app/pico-freertos.elf",
+      "gdbPath": "gdb-multiarch",
+      "configFiles": [
+        "interface/cmsis-dap.cfg",
+        "target/rp2350.cfg"
+      ],
+      "openOCDLaunchCommands": [
+        "adapter speed 1000"
+      ],
+      "runToEntryPoint": "main",
+      "preLaunchTask": "Build Pico 2 W firmware (Debug)"
+    }
+  ]
+}

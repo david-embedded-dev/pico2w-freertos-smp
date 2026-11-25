@@ -2,11 +2,7 @@
 
 **English** | [Português](README.pt-BR.md)
 
-A C project with **FreeRTOS SMP** on the Raspberry Pi Pico 2 W (RP2350), exploring multitasking, core affinity and synchronization between tasks.
-
-A Raspberry Pi Pico (RP2040) is used as a **PicoProbe** for SWD programming and debugging, and UART communication.
-
-<img src="images/Hardware_setup.jpeg" alt="PicoProbe and Pico 2 W connected for development" width="420">
+A C project using **FreeRTOS SMP** on the Raspberry Pi Pico 2 W (RP2350), exploring multitasking, core affinity and synchronization between tasks.
 
 ## Implementation
 
@@ -20,16 +16,42 @@ The application uses three tasks:
 
 UART access is protected by a mutex. The LED is controlled through the CYW43 interface.
 
+### Project architecture
+
+```text
+.
+├── app/
+│   ├── src/
+│   │   └── main.c             # FreeRTOS tasks, LED and UART logs
+│   └── CMakeLists.txt         # application executable and libraries
+├── config/
+│   └── FreeRTOSConfig.h       # SMP and core affinity configuration
+├── libs/
+│   ├── FreeRTOS-Kernel/       # kernel and RP2350 port
+│   └── pico-sdk/              # Raspberry Pi Pico SDK and drivers
+├── .vscode/
+│   ├── launch.json            # Cortex-Debug/OpenOCD debug session
+│   └── tasks.json             # build task
+├── images/                    # project diagrams and screenshots
+├── CMakeLists.txt             # main project configuration
+├── build.sh                   # builds ELF/UF2 files in build/
+└── flasher.sh                 # flashes and verifies firmware via PicoProbe
+```
+
+`build.sh` builds the application with the Pico SDK and FreeRTOS. The resulting firmware runs on the Pico 2 W. Debugging uses SWD; logs are sent separately over UART.
+
 ## Requirements
 
 **Development environment:**
 - Ubuntu/Debian
+- Visual Studio Code
 - Git, CMake and Ninja
 - GNU Arm Embedded Toolchain
 - OpenOCD with RP2350 support
-- GDB Multiarch
+- `gdb-multiarch` (or `arm-none-eabi-gdb`)
+- Cortex-Debug VS Code extension
 
-The scripts use Bash. The Pico SDK and FreeRTOS Kernel are fetched as submodules.
+The scripts use Bash. The Pico SDK and FreeRTOS Kernel are provided as submodules.
 
 **Hardware:**
 - Raspberry Pi Pico (RP2040), used as the PicoProbe;
@@ -42,43 +64,41 @@ The target can be powered by USB or by the PicoProbe's VSYS output. Do not use b
 
 ## 1. Flash the PicoProbe firmware
 
-On the official [Debug Probe releases](https://github.com/raspberrypi/debugprobe/releases/latest) page, choose the file for the board used **as the probe**:
+On the official [Debug Probe releases](https://github.com/raspberrypi/debugprobe/releases/latest) page, choose the firmware for the board used **as the probe**:
 
 | Board used as the probe | Firmware |
-| --- | --- |
+|---|---|
 | First-generation Raspberry Pi Pico (RP2040) | `debugprobe_on_pico.uf2` |
 | Raspberry Pi Pico 2 (RP2350) | `debugprobe_on_pico2.uf2` |
 | Official Raspberry Pi Debug Probe | `debugprobe.uf2` |
 
-This guide uses a **Pico 1** as the probe: download `debugprobe_on_pico.uf2`. The Pico 2 W is the target and receives this project's firmware in the flashing step; do not flash the probe firmware onto it.
+This guide uses a **Pico 1** as the probe: download `debugprobe_on_pico.uf2`. The Pico 2 W is the target and receives this project's firmware when flashing; do not install the probe firmware on it.
 
 1. Disconnect the Pico 1.
-2. Hold **BOOTSEL** and connect the Pico 1 to the computer.
+2. Hold **BOOTSEL** while connecting the Pico 1 to the computer.
 3. Copy `debugprobe_on_pico.uf2` to the `RPI-RP2` drive.
 4. After reboot, the Pico 1 provides CMSIS-DAP for SWD and a USB-to-UART serial interface.
 
-## 2. Wire the boards
+## 2. Connect the boards
 
-The Pico W on the left represents the Pico 2 W due to their identical pinout.
+The Pico W shown on the left represents the Pico 2 W because they have the same pinout.
 
-<img src="images/wiring.png" alt="Wiring diagram for PicoProbe and Pico 2 W" width="720">
+<img src="images/wiring.png" alt="Wiring diagram for the PicoProbe and Pico 2 W" width="720">
 
 | Purpose | Probe pin | Target pin | Connection |
-| --- | --- | --- | --- |
+|---|---|---|---|
 | SWD clock | GP2, physical pin 4 | SWCLK on DEBUG header | Probe GP2 → target SWCLK |
 | SWD data | GP3, physical pin 5 | SWDIO on DEBUG header | Probe GP3 → target SWDIO |
 | Common ground | GND, physical pin 38 | GND on DEBUG header | Probe GND → target GND |
-| UART probe TX → target RX | GP4, physical pin 6 | GP1/UART0 RX, physical pin 2 | Optional input to target |
-| UART target TX → probe RX | GP5, physical pin 7 | GP0/UART0 TX, physical pin 1 | Required for serial output |
+| Probe UART TX → target RX | GP4, physical pin 6 | GP1/UART0 RX, physical pin 2 | Optional input to target |
+| Target UART TX → probe RX | GP5, physical pin 7 | GP0/UART0 TX, physical pin 1 | Required for serial logs |
 | VSYS power | VSYS, physical pin 39 | VSYS, physical pin 39 | Optional target power |
 
-SWD requires SWCLK, SWDIO and GND. The UART target TX/GP0 → probe RX/GP5 direction is required to see the counters. UART GP4/GP1 is only needed to send data to the target; the example does not process serial commands.
+<img src="images/Hardware_setup.jpeg" alt="PicoProbe connected to the Pico 2 W" width="420">
 
-Connect GND first and use 3.3 V logic levels. VSYS power is optional. When VSYS is connected, do not connect a second USB power source to the target.
+## 3. Set up the environment
 
-## 3. Install build tools
-
-The scripts use Bash, CMake, Ninja and GNU Arm Embedded tools. The commands below are for Ubuntu/Debian:
+The scripts use Bash, CMake, Ninja and GNU Arm Embedded tools. The following commands are for Ubuntu/Debian:
 
 ```bash
 sudo apt update
@@ -97,12 +117,12 @@ git submodule update --init --recursive
 
 ## 4. Install OpenOCD with RP2350 support
 
-The installed OpenOCD must provide these two files:
+The OpenOCD installation must provide these files:
 
 - `interface/cmsis-dap.cfg`
 - `target/rp2350.cfg`
 
-Older distribution packages may not support the RP2350. The Raspberry Pi [OpenOCD fork](https://github.com/raspberrypi/openocd) includes support for Pico-series boards.
+Older distribution packages may not support the RP2350. The Raspberry Pi [OpenOCD fork](https://github.com/raspberrypi/openocd) supports Pico-series boards.
 
 ```bash
 sudo apt install -y autoconf libtool pkg-config libusb-1.0-0-dev libhidapi-dev
@@ -125,7 +145,6 @@ test -f /usr/local/share/openocd/scripts/interface/cmsis-dap.cfg && echo "CMSIS-
 test -f /usr/local/share/openocd/scripts/target/rp2350.cfg && echo "RP2350: OK"
 ```
 
-
 ## 5. Build
 
 From the repository root:
@@ -134,14 +153,13 @@ From the repository root:
 ./build.sh
 ```
 
-The script **removes the existing `build/` directory** and creates a clean `Debug` build for `PICO_BOARD=pico2_w` using Ninja. The generated files include:
+The script **removes the existing `build/` directory** and creates a clean Debug build for `PICO_BOARD=pico2_w` using Ninja. The generated files include:
 
 ```text
 build/app/pico-freertos.elf
 build/app/pico-freertos.uf2
 build/app/pico-freertos.bin
 ```
-
 
 ## 6. Flash through the PicoProbe
 
@@ -153,29 +171,33 @@ Connect the PicoProbe USB cable and complete the SWD and GND wiring. Then run:
 
 The script uses OpenOCD with `cmsis-dap.cfg` and `rp2350.cfg`, verifies the ELF in flash, resets the target and exits.
 
-If you get a USB access error, configure device permissions, for example with a udev rule appropriate for your distribution.
+## 7. Serial monitor
 
+To receive the logs, install and open [Serial Monitor](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-serial-monitor) or use another serial terminal. Select the probe's CDC/UART port (usually `/dev/ttyACM0` on Linux) and set **115200 baud, 8N1**.
 
-## 7. Open the serial monitor
-
-1. Keep the PicoProbe connected to the computer by USB.
-2. In VS Code, open a serial monitor extension or use another terminal program.
-3. Select the PicoProbe CDC/UART port; on Linux, it may be `/dev/ttyACM0`.
-4. Set **115200 baud, 8 data bits, no parity and 1 stop bit (8N1)** and start monitoring.
-
-The PicoProbe provides CMSIS-DAP for flashing and a CDC port for serial output; select the serial port. USB serial on the Pico 2 W itself is disabled in this firmware; connect the monitor to the **PicoProbe** port. If you missed the startup messages, keep the monitor open and run `./flasher.sh` again in another terminal to flash and reset the target.
+USB serial on the Pico 2 W itself is disabled in this firmware; select the **PicoProbe** port, not the target's. If you missed the startup messages, open the monitor first and run `./flasher.sh` in another terminal to reset the board.
 
 Expected output:
 
 <img src="images/Output.png" alt="Serial output showing counters on both cores" width="720">
 
-The FreeRTOS version and startup logs may vary. Message order is not guaranteed: the important result is that the `core 0` and `core 1` counters keep increasing. Each counter starts at zero when its task starts, after the two-second startup delay.
+## 8. Debug
+
+**VS Code debugging extension:** [Cortex-Debug (`marus25.cortex-debug`)](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug). Breakpoints also require a PicoProbe (or another CMSIS-DAP probe), OpenOCD with RP2350 support and `gdb-multiarch`; see sections 2–4 for the tools and SWD wiring.
+
+Install Cortex-Debug from the Marketplace. In **Run and Debug**, select **Pico 2 W via Pico Probe** and start the session. Click beside a line number to add a breakpoint. To view UART output, also install the **Serial Monitor** extension described in section 7.
+
+<p align="center">
+  <img src="images/debug-vscode.png" alt="VS Code paused at a breakpoint, with debugger controls and FreeRTOS UART logs in the Serial Monitor" width="900">
+</p>
+
+*Debugging the Pico 2 W through a PicoProbe in VS Code.*
 
 ## Continue developing
 
 - Explore task creation in `app/src/main.c`.
 - Check `config/FreeRTOSConfig.h` to adjust SMP settings and core affinity.
-- After making changes, build with `./build.sh` and flash with `./flasher.sh`.
+- After changes, build with `./build.sh` and flash with `./flasher.sh`.
 
 ## Troubleshooting
 
@@ -184,17 +206,6 @@ The FreeRTOS version and startup logs may vary. Message order is not guaranteed:
 - **SWD flashing:** check power, common GND, SWCLK, SWDIO and PicoProbe USB permissions.
 - **No serial output:** check the PicoProbe CDC port, UART connections, GND and 115200/8N1 settings.
 - **Missing startup messages:** open the serial monitor before resetting the board.
-
-## Project structure
-
-| Path | Purpose |
-|---|---|
-| `app/src/main.c` | CYW43 initialization and task implementation |
-| `app/CMakeLists.txt` | Executable and library configuration |
-| `config/FreeRTOSConfig.h` | FreeRTOS SMP configuration |
-| `CMakeLists.txt` | Pico SDK and project configuration |
-| `build.sh` | Firmware build |
-| `flasher.sh` | Firmware flashing and verification |
 
 ## References
 
@@ -207,4 +218,4 @@ The FreeRTOS version and startup logs may vary. Message order is not guaranteed:
 
 ## License
 
-The original project files are licensed under the [MIT License](LICENSE). Pico SDK, FreeRTOS and the third-party case retain their respective licenses.
+The original project files are licensed under the [MIT License](LICENSE). The Pico SDK, FreeRTOS and the third-party case retain their respective licenses.
