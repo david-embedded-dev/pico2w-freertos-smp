@@ -1,9 +1,10 @@
 # FreeRTOS SMP na Raspberry Pi Pico 2 W
 
-**Português** | [English](README_en.md)
+**Português** | [English](README.md)
 
 Projeto em C com **FreeRTOS SMP** na Raspberry Pi Pico 2 W (RP2350), explorando multitarefa, afinidade de núcleo (*Core Affinity*) e sincronização entre tarefas.
 
+<img src="images/Hardware_setup.jpeg" alt="PicoProbe e Pico 2 W conectadas para desenvolvimento" width="420">
 
 ## Implementação
 
@@ -16,30 +17,6 @@ A aplicação utiliza três tarefas:
 | LED Task | Core 0 | Controle do LED integrado |
 
 O acesso à UART é protegido por Mutex. O LED é controlado pela interface CYW43.
-
-### Arquitetura do projeto
-
-```text
-.
-├── app/
-│   ├── src/
-│   │   └── main.c             # tarefas FreeRTOS, LED e logs UART
-│   └── CMakeLists.txt         # executável e bibliotecas da aplicação
-├── config/
-│   └── FreeRTOSConfig.h       # configuração SMP e afinidade dos núcleos
-├── libs/
-│   ├── FreeRTOS-Kernel/       # kernel e port para RP2350
-│   └── pico-sdk/              # SDK e drivers da Raspberry Pi Pico
-├── .vscode/
-│   ├── launch.json            # sessão de depuração Cortex-Debug/OpenOCD
-│   └── tasks.json             # tarefa de compilação
-├── images/                    # diagramas e capturas do projeto
-├── CMakeLists.txt             # configuração principal do projeto
-├── build.sh                   # compila e gera ELF/UF2 em build/
-└── flasher.sh                 # grava e verifica o firmware via PicoProbe
-```
-
-O `build.sh` compila a aplicação com o Pico SDK e o FreeRTOS; o firmware resultante executa na Pico 2 W. A depuração usa SWD, e os logs são enviados separadamente pela UART.
 
 ## Requisitos
 
@@ -94,8 +71,6 @@ A placa Pico W à esquerda representa a Pico 2 W, pois ambas possuem a mesma pin
 | UART TX da probe → RX do alvo | GP4, pino físico 6 | GP1/UART0 RX, pino físico 2 | Entrada opcional no alvo |
 | UART TX do alvo → RX da probe | GP5, pino físico 7 | GP0/UART0 TX, pino físico 1 | Necessária para os logs |
 | Alimentação VSYS | VSYS, pino físico 39 | VSYS, pino físico 39 | Alimentação opcional do alvo |
-
-<img src="images/Hardware_setup.jpeg" alt="PicoProbe e Pico 2 W conectadas para desenvolvimento" width="420">
 
 ## 3. Setup do ambiente
 

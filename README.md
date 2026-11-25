@@ -3,6 +3,7 @@
 **English** | [Português](README.pt-BR.md)
 
 A C project using **FreeRTOS SMP** on the Raspberry Pi Pico 2 W (RP2350), exploring multitasking, core affinity and synchronization between tasks.
+<img src="images/Hardware_setup.jpeg" alt="PicoProbe connected to the Pico 2 W" width="420">
 
 ## Implementation
 
@@ -16,29 +17,7 @@ The application uses three tasks:
 
 UART access is protected by a mutex. The LED is controlled through the CYW43 interface.
 
-### Project architecture
 
-```text
-.
-├── app/
-│   ├── src/
-│   │   └── main.c             # FreeRTOS tasks, LED and UART logs
-│   └── CMakeLists.txt         # application executable and libraries
-├── config/
-│   └── FreeRTOSConfig.h       # SMP and core affinity configuration
-├── libs/
-│   ├── FreeRTOS-Kernel/       # kernel and RP2350 port
-│   └── pico-sdk/              # Raspberry Pi Pico SDK and drivers
-├── .vscode/
-│   ├── launch.json            # Cortex-Debug/OpenOCD debug session
-│   └── tasks.json             # build task
-├── images/                    # project diagrams and screenshots
-├── CMakeLists.txt             # main project configuration
-├── build.sh                   # builds ELF/UF2 files in build/
-└── flasher.sh                 # flashes and verifies firmware via PicoProbe
-```
-
-`build.sh` builds the application with the Pico SDK and FreeRTOS. The resulting firmware runs on the Pico 2 W. Debugging uses SWD; logs are sent separately over UART.
 
 ## Requirements
 
@@ -94,7 +73,8 @@ The Pico W shown on the left represents the Pico 2 W because they have the same 
 | Target UART TX → probe RX | GP5, physical pin 7 | GP0/UART0 TX, physical pin 1 | Required for serial logs |
 | VSYS power | VSYS, physical pin 39 | VSYS, physical pin 39 | Optional target power |
 
-<img src="images/Hardware_setup.jpeg" alt="PicoProbe connected to the Pico 2 W" width="420">
+
+
 
 ## 3. Set up the environment
 
@@ -183,9 +163,9 @@ Expected output:
 
 ## 8. Debug
 
-**VS Code debugging extension:** [Cortex-Debug (`marus25.cortex-debug`)](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug). Breakpoints also require a PicoProbe (or another CMSIS-DAP probe), OpenOCD with RP2350 support and `gdb-multiarch`; see sections 2–4 for the tools and SWD wiring.
+To debug, you need a PicoProbe (or another CMSIS-DAP debug probe), OpenOCD with RP2350 support, `gdb-multiarch e a extensão de depuração do VS Code:** [Cortex-Debug (`marus25.cortex-debug`)](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug).`.
 
-Install Cortex-Debug from the Marketplace. In **Run and Debug**, select **Pico 2 W via Pico Probe** and start the session. Click beside a line number to add a breakpoint. To view UART output, also install the **Serial Monitor** extension described in section 7.
+In Run and Debug, select Pico 2 W via Pico Probe and click Start Debugging. Set breakpoints and test the application. The expected output is shown below:
 
 <p align="center">
   <img src="images/debug-vscode.png" alt="VS Code paused at a breakpoint, with debugger controls and FreeRTOS UART logs in the Serial Monitor" width="900">
